@@ -8,7 +8,7 @@ interface Config {
         /** Category for closed tickets to go */
         archivedCategory:string,
         /** Server ID of where tickets should be created */
-        guild_id:`${bigint}`,
+        guild_id:string,
         /** Message to be sent in a newly created ticket channel */
         topic:string
     },
