@@ -8,8 +8,10 @@ const config:Config = configFile;
 const ticketManager = new TicketManager(client)
 
 client.once('ready', () => {
+    console.log("Bot ready.")
     if(existsSync("./commands_created.flag") && (!config.developer || !config.developer.bypassFlagCheck))return;
-    client.guilds.cache.get(config.tickets.guild_id).commands.create({
+    console.log(config.tickets.guild_id as `${bigint}`)
+    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
         "name":"listen",
         "description":"Send message for users to create ticket"
     });
