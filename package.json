@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "discord.js": "^13.0.0-dev.4d53d0f.1626566655"
+  },
+  "scripts": {
+    "start": "node out/src/index.js",
+    "build": "tsc --build tsconfig.json"
+  }
+}
