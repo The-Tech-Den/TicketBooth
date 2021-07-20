@@ -9,7 +9,7 @@ const ticketManager = new TicketManager(client)
 
 client.once('ready', () => {
     if(existsSync("./commands_created.flag") && (!config.developer || !config.developer.bypassFlagCheck))return;
-    client.guilds.cache.get(config.developer.guild_id as `${bigint}`).commands.create({
+    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
         "name":"listen",
         "description":"Send message for users to create ticket"
     });
