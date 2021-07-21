@@ -1,4 +1,4 @@
-import { CategoryChannelResolvable, Client, User } from 'discord.js';
+import { CategoryChannelResolvable, Client, GuildMember, User } from 'discord.js';
 import {readFileSync, writeFileSync, existsSync} from 'fs'
 import configFile from '../config';
 
@@ -39,6 +39,15 @@ class TicketManager {
             .then(() => {
                 channel.send({
                     "content":`<@${options.userID}>\n${this.config.tickets.topic}`,
+                    "embeds":[
+                        {
+                            "author":{
+                                "name":`About ${options.user.tag}`,
+                                "icon_url":options.user.displayAvatarURL({dynamic:true})
+                            },
+                            "description":`**ID**: ${options.user.id}\n**Account Created**: <t:${Math.floor(options.user.createdAt.getTime() / 1000)}>`
+                        }
+                    ],
                     "components":[
                         {
                             "type":1,
