@@ -38,8 +38,12 @@ class TicketManager {
             })
             .then(() => {
                 channel.send({
-                    "content":`<@${options.userID}>\n${this.config.tickets.topic}`,
+                    "content":`<@${options.userID}>`,
                     "embeds":[
+                        {
+                            "description":this.config.tickets.topic,
+                            "color":"WHITE"
+                        },
                         {
                             "author":{
                                 "name":`About ${options.user.tag}`,
