@@ -74,23 +74,23 @@ client.on("interactionCreate", (interaction) => {
                     "description":`<@${interaction.member.user.id}> has closed the ticket.`,
                     "color":"RED"
                 },
-                // {
-                //     "description":"```Staff Controls```"
-                // }
+                {
+                    "description":"```Staff Ticket Controls```"
+                }
             ],
-            // "components":[
-            //     {
-            //         "type":1,
-            //         "components":[
-            //             {
-            //                 "type":"BUTTON",
-            //                 "label":"Delete Ticket Channel",
-            //                 "customId":`ticket_delete_${channel_id}`,
-            //                 "style":"DANGER"
-            //             }
-            //         ]
-            //     }
-            // ]
+            "components":[
+                {
+                    "type":1,
+                    "components":[
+                        {
+                            "type":"BUTTON",
+                            "label":"Delete Ticket Channel",
+                            "customId":`tickets_deletechannel_${channel_id}`,
+                            "style":"DANGER"
+                        }
+                    ]
+                }
+            ]
         })
         .then(() => {
             let ticketChannel = client.channels.cache.get(`${channel_id as any as bigint}`) as TextChannel;
@@ -102,6 +102,23 @@ client.on("interactionCreate", (interaction) => {
                     ticketChannel.lockPermissions()
                 })
             })
+        })
+    }
+
+    if(interaction.isButton() && interaction.customId.startsWith("tickets_deletechannel")){
+        if(!config.users.whitelisted.includes(interaction.member?interaction.member.user.id:interaction.user.id))
+            return interaction.reply({"content":"You aren't authorized to perform this action.", "ephemeral":true})
+        let channel_id = interaction.customId.split("tickets_deletechannel_")[1]
+        interaction.reply({
+            "content":"Attempting to delete..."
+        })
+        .then(() => {
+            let ticketChannel = client.channels.cache.get(`${channel_id as any as bigint}`) as TextChannel;
+            if(ticketChannel.parentId != config.tickets.archivedCategory)
+                return interaction.editReply({
+                    "content":`Failed to delete channel. Reason: It is not under the <#${config.tickets.archivedCategory}> category.`
+                })
+            ticketChannel.delete()
         })
     }
 });
