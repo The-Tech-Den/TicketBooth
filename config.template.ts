@@ -7,10 +7,13 @@ const config: Config  = {
         "message":"",
         "openCategory":"1234567890",
         "archivedCategory":"1234567890",
-        "topic":""
+        "topic":"",
+        "maxTickets":1,
+        "allowTicketDeletion":true
     },
     "users":{
-        "whitelisted":[]
+        "whitelisted":[],
+        "blacklistedRole":""
     }
 }
 export default config;
