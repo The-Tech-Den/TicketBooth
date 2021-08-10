@@ -3,7 +3,9 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "discord.js": "^13.0.0-dev.4d53d0f.1626566655"
+    "@types/rethinkdb": "^2.3.17",
+    "discord.js": "^13.1.0-dev.1628636286.0266f28",
+    "rethinkdb": "^2.4.2"
   },
   "scripts": {
     "start": "node out/src/index.js",
