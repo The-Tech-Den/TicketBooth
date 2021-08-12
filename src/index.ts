@@ -4,6 +4,8 @@ import {writeFileSync, existsSync} from 'fs'
 import TicketManager from './ticketManager';
 import CooldownStore from './cooldown';
 import r, { Connection } from 'rethinkdb'
+import openTicketWithMessage from './ctx_commands_msg/openTicketWithMessage';
+import openTicketCtxButton from './ctx_commands_user/openTicketCtxButton';
 import openTicketWithMessageAndUser from './ctx_commands_msg/openTicketWithMessageAndUser';
 
 const client = new Client({"intents":["GUILDS"]});
@@ -15,18 +17,34 @@ let connnection:Connection;
 client.once('ready', () => {
     console.log("Bot ready.")
     if(existsSync("./commands_created.flag") && (!config.developer || !config.developer.bypassFlagCheck))return;
-    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
-        "name":"listen",
-        "description":"Send message for users to create ticket"
-    });
-    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
-        "name":"Open Ticket",
-        "type":"USER"
-    });
-    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
-        "name":"Open Ticket For Message",
-        "type":"MESSAGE"
-    }).catch(console.error);
+    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.set([]).then(() => {
+        client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
+            "name":"listen",
+            "description":"Send message for users to create ticket"
+        })
+        .then(() => {
+            client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
+                "name":"Ticket w/user",
+                "type":"USER"
+            })
+            .then(() => {
+                client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
+                    "name":"Ticket w/msg",
+                    "type":"MESSAGE"
+                })
+                .then(() => {
+                    client.guilds.cache.get(config.tickets.guild_id as `${bigint}`).commands.create({
+                        "name":"Ticket w/msg&user",
+                        "type":"MESSAGE"
+                    })
+                    .catch(console.error);
+                })
+                .catch(console.error);
+            })
+            .catch(console.error);
+        })
+        .catch(console.error);
+    })
     writeFileSync("./commands_created.flag", "true")
 });
 
@@ -99,91 +117,26 @@ client.on("interactionCreate", (interaction) => {
         .catch(console.error)
     }
     
-    if(interaction.isContextMenu() && interaction.commandName == "Open Ticket"){
-        let userClicked = interaction.options.data[0]
-        if(!config.users.whitelisted.includes(interaction.member.user.id))
-            return interaction.reply({
-                "content":"Only whitelisted staff members may use this feature",
-                "ephemeral":true
-            }).catch(console.error);
-        if((userClicked.member.roles as GuildMemberRoleManager).cache.has(config.users.blacklistedRole) && config.users.whitelisted.includes(userClicked.value.toString()))
-            return interaction.reply({
-                "content":":warning: **Conflicting Permissions**: This user is whitelisted and have the blacklisted role. Please either fix their roles, or change bot settings.",
-                "ephemeral":true
-            }).catch(console.error);
-        if((userClicked.member.roles as GuildMemberRoleManager).cache.has(config.users.blacklistedRole))
-            return interaction.reply({
-                "content":"This user is blacklisted of creating new tickets. Contact server staff for more information.",
-                "ephemeral":true
-            }).catch(console.error);
-        if(cooldowns.underCooldown(userClicked.value.toString()))
-            return interaction.reply({
-                "content":config.tickets.maxTicketsMessage || `This user has ${config.tickets.maxTickets == 1?"already opened a ticket":`reached the max amount of tickets they can have open (${config.tickets.maxTickets})`}. Please use their existing ${config.tickets.maxTickets == 1?"ticket":"tickets"}.`,
-                "ephemeral":true
-            }).catch(console.error);
-        if(!cooldowns.storeExists(userClicked.value.toString()))
-            cooldowns.start(userClicked.value.toString());
-        cooldowns.addTicketCount(userClicked.value.toString());
-        interaction.reply({
-            "content":config.tickets.ticketOpenedMessage?.replace(/\!{(REMAINING)\}!/g, `${config.tickets.maxTickets-cooldowns.store[userClicked.value.toString()].openTickets}`).toString() || `Their ticket is being created... ${cooldowns.store[userClicked.value.toString()].openTickets >= config.tickets.maxTickets?"This is the last ticket they can have create. Close existing tickets to create more.":`They can create ${config.tickets.maxTickets-cooldowns.store[userClicked.value.toString()].openTickets} more tickets after this.`}`,
-            "ephemeral":true
-        }).then(() => {
-            ticketManager.create({
-                guildID:`${BigInt(interaction.guildId)}`,
-                userID:userClicked.value.toString(),
-                topic:config.tickets.topic,
-                user:interaction.options.data[0].user as User,
-                openedWith:"CONTEXT_MENU",
-                reason:"NEW"
-            })  
-        })
-        .catch(console.error)
+    if(interaction.isContextMenu() && interaction.commandName == "Ticket w/user"){
+        openTicketCtxButton.execute({interaction:interaction, cooldowns:cooldowns, ticketManager:ticketManager})
     }
 
-    if(interaction.isContextMenu() && interaction.commandName == "Open Ticket For Message"){
-        if((interaction.member.roles as GuildMemberRoleManager).cache.has(config.users.blacklistedRole) && config.users.whitelisted.includes(interaction.member.user.id))
-            return interaction.reply({
-                "content":":warning: **Conflicting Permissions**: You are both whitelisted and have the blacklisted role. Please either fix your roles, or change bot settings.",
-                "ephemeral":true
-            }).catch(console.error);
-        if((interaction.member.roles as GuildMemberRoleManager).cache.has(config.users.blacklistedRole))
-            return interaction.reply({
-                "content":"You are blacklisted of creating new tickets. Contact server staff for more information.",
-                "ephemeral":true
-            }).catch(console.error);
-        if(cooldowns.underCooldown(interaction.member.user.id))
-            return interaction.reply({
-                "content":config.tickets.maxTicketsMessage || `You have ${config.tickets.maxTickets == 1?"already opened a ticket":`reached the max amount of tickets you can open (${config.tickets.maxTickets})`}. Please use your existing ${config.tickets.maxTickets == 1?"ticket":"tickets"}.`,
-                "ephemeral":true
-            }).catch(console.error);
-        if(!cooldowns.storeExists(interaction.member.user.id))
-            cooldowns.start(interaction.member.user.id);
-        cooldowns.addTicketCount(interaction.member.user.id);
-        interaction.reply({
-            "content":config.tickets.ticketOpenedMessage?.replace(/\!{(REMAINING)\}!/g, `${config.tickets.maxTickets-cooldowns.store[interaction.member.user.id].openTickets}`).toString() || `Your ticket is being created... ${cooldowns.store[interaction.member.user.id].openTickets >= config.tickets.maxTickets?"This is the last ticket you can create. Close existing tickets to create more.":`You can create ${config.tickets.maxTickets-cooldowns.store[interaction.member.user.id].openTickets} more tickets after this.`}`,
-            "ephemeral":true
-        }).then(() => {
-            ticketManager.create({
-                guildID:`${BigInt(interaction.guildId)}`,
-                userID:interaction.member.user.id,
-                topic:config.tickets.topic,
-                user:interaction.member.user as User,
-                openedWith:"CONTEXT_MENU",
-                reason:"MESSAGE",
-                message:interaction.options.data[0].message as Message
-            })  
-        })
-        .catch(console.error)
+    if(interaction.isContextMenu() && interaction.commandName == "Ticket w/msg"){
+        openTicketWithMessage.execute({interaction:interaction, cooldowns:cooldowns, ticketManager:ticketManager})
+    }
+
     if(interaction.isContextMenu() && interaction.commandName == "Ticket w/msg&user"){
         openTicketWithMessageAndUser.execute({interaction:interaction, cooldowns:cooldowns, ticketManager:ticketManager})
     }
 
     if(interaction.isButton() && interaction.customId.startsWith("tickets_close")){
-        let channel_id = interaction.customId.split("tickets_close_")[1];
+        let channel_id = interaction.customId.split("_")[2];
+        let user_id = interaction.customId.split("_")[3] || interaction.member.user.id;
         let newComponents:MessageButton[] = (interaction.message.components[0].components as MessageButton[]);
         newComponents.find(b => b.customId.startsWith("tickets_close")).disabled = true
         newComponents.forEach(b => b.disabled = true)
-        cooldowns.removeTicketCount(interaction.member.user.id)
+        cooldowns.removeTicketCount(user_id)
+        console.log(cooldowns.store)
         interaction.update({
             "components":[
                 {
