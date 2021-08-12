@@ -4,6 +4,7 @@ import {writeFileSync, existsSync} from 'fs'
 import TicketManager from './ticketManager';
 import CooldownStore from './cooldown';
 import r, { Connection } from 'rethinkdb'
+import openTicketWithMessageAndUser from './ctx_commands_msg/openTicketWithMessageAndUser';
 
 const client = new Client({"intents":["GUILDS"]});
 const config:Config = configFile;
@@ -173,6 +174,8 @@ client.on("interactionCreate", (interaction) => {
             })  
         })
         .catch(console.error)
+    if(interaction.isContextMenu() && interaction.commandName == "Ticket w/msg&user"){
+        openTicketWithMessageAndUser.execute({interaction:interaction, cooldowns:cooldowns, ticketManager:ticketManager})
     }
 
     if(interaction.isButton() && interaction.customId.startsWith("tickets_close")){
